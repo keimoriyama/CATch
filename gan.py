@@ -65,18 +65,18 @@ class GAN():
 
         model = Sequential()
 
-        model.add(Dense(256, input_dim=self.latent_dim))
-        model.add(LeakyReLU(alpha=0.2))
+        model.add(Dense(128 * 32 * 32, activation="relu", input_dim=self.latent_dim))
+        model.add(Reshape((32, 32, 128)))
+        model.add(UpSampling2D())
+        model.add(Conv2D(128, kernel_size=3, padding="same"))
         model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(512))
-        model.add(LeakyReLU(alpha=0.2))
+        model.add(Activation("relu"))
+        model.add(UpSampling2D())
+        model.add(Conv2D(64, kernel_size=3, padding="same"))
         model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(1024))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(np.prod(self.img_shape), activation='tanh'))
-        model.add(Reshape(self.img_shape))
-
+        model.add(Activation("relu"))
+        model.add(Conv2D(self.channels, kernel_size=3, padding="same"))
+        model.add(Activation("tanh"))
         model.summary()
 
         noise = Input(shape=(self.latent_dim,))
@@ -88,12 +88,27 @@ class GAN():
 
         model = Sequential()
 
-        model.add(Flatten(input_shape=self.img_shape))
-        model.add(Dense(512))
+
+
+        model.add(Conv2D(32, kernel_size=3, strides=2, input_shape=self.img_shape, padding="same"))
         model.add(LeakyReLU(alpha=0.2))
-        model.add(Dense(256))
+        model.add(Dropout(0.25))
+        model.add(Conv2D(64, kernel_size=3, strides=2, padding="same"))
+        model.add(ZeroPadding2D(padding=((0,1),(0,1))))
+        model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
+        model.add(Dropout(0.25))
+        model.add(Conv2D(128, kernel_size=3, strides=2, padding="same"))
+        model.add(BatchNormalization(momentum=0.8))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(Dropout(0.25))
+        model.add(Conv2D(256, kernel_size=3, strides=1, padding="same"))
+        model.add(BatchNormalization(momentum=0.8))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(Dropout(0.25))
+        model.add(Flatten())
         model.add(Dense(1, activation='sigmoid'))
+
         model.summary()
 
         img = Input(shape=self.img_shape)
@@ -104,17 +119,14 @@ class GAN():
     def train(self, epochs, batch_size=256, sample_interval=50):
 
         # Load the dataset
-        #(X_train, _), (_, _) = mnist.load_data()
         X_train,_ = self.load_img()
-        #X_train = f["x_train"]
+        print(X_train.shape)
         # Rescale -1 to 1
         X_train = (X_train.astype(np.float32)- 127.5) / 127.5 
         #X_train = np.expand_dims(X_train, axis=3)
-
         # Adversarial ground truths
         valid = np.ones((batch_size, 1))
         fake = np.zeros((batch_size, 1))
-
         for epoch in range(epochs):
 
             # ---------------------
@@ -164,7 +176,7 @@ class GAN():
         cnt = 0
         for i in range(r):
             for j in range(c):
-                axs[i, j].imshow(gen_imgs[cnt, :, :, 0], cmap='gray')
+                axs[i, j].imshow(gen_imgs[cnt, :, :, ])
                 axs[i, j].axis('off')
                 cnt += 1
         fig.savefig("images/%d.png" % epoch)
@@ -187,7 +199,6 @@ class GAN():
             img = cv2.imread(img_names)
             count += 1
             img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-            print(img.shape)
             images.append(img)
         images = np.array(images)
 
@@ -203,4 +214,4 @@ class GAN():
 
 if __name__ == '__main__':
     gan = GAN()
-    gan.train(epochs=30000, batch_size=32, sample_interval=200)
+    gan.train(epochs=30000, batch_size=16, sample_interval=200)

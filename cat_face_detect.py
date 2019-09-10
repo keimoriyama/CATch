@@ -2,7 +2,7 @@ import sys
 import cv2 as cv
 
 import os
-root_dir = "./cat/"
+root_dir = "./cat_dataset/"
 
 def detect(imagefilename, cascadefilename):
     err = False
@@ -16,7 +16,7 @@ def detect(imagefilename, cascadefilename):
         print('cannnot load cascade file')
         sys.exit(-1)
     try:
-        objects = cascade.detectMultiScale(srcimg, 1.1, 3,minSize=(50,50))
+        objects = cascade.detectMultiScale(srcimg, 1.1, 3,minSize=(100,100))
         for (x, y, w, h) in objects:
             print(x, y, w, h)
             cv.rectangle(dstimg, (x, y), (x + w, y + h), (0, 0, 255), 2)
